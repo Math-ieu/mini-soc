@@ -1,0 +1,37 @@
+{
+  "name": "Block Malicious IP in AWS SG",
+  "description": "Triggered by Wazuh, blocks source IP in AWS Security Group",
+  "nodes": [
+    {
+      "id": "wazuh_webhook",
+      "type": "webhook",
+      "label": "Wazuh Alert Webhook"
+    },
+    {
+      "id": "extract_ip",
+      "type": "transform",
+      "label": "Extract Source IP",
+      "config": {
+        "script": "return alert.data.srcip"
+      }
+    },
+    {
+      "id": "aws_ec2_block",
+      "type": "action",
+      "app": "AWS EC2",
+      "action": "authorize_security_group_ingress",
+      "config": {
+        "GroupId": "sg-client-sg-id",
+        "IpProtocol": "tcp",
+        "FromPort": 0,
+        "ToPort": 65535,
+        "CidrIp": "{{extract_ip.result}}/32",
+        "Direction": "deny"
+      }
+    }
+  ],
+  "edges": [
+    { "source": "wazuh_webhook", "target": "extract_ip" },
+    { "source": "extract_ip", "target": "aws_ec2_block" }
+  ]
+}

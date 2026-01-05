@@ -1,0 +1,26 @@
+- name: Install Shuffle SOAR
+  hosts: shuffle_soar
+  become: yes
+  tasks:
+    - name: Install Docker
+      apt:
+        name: 
+          - docker.io
+          - docker-compose
+        state: present
+        update_cache: yes
+
+    - name: Create Shuffle directory
+      file:
+        path: /opt/shuffle
+        state: directory
+
+    - name: Download Shuffle Docker Compose
+      get_url:
+        url: https://raw.githubusercontent.com/Shuffle/Shuffle/master/docker-compose.yml
+        dest: /opt/shuffle/docker-compose.yml
+
+    - name: Start Shuffle
+      shell:
+        cmd: docker-compose up -d
+        chdir: /opt/shuffle

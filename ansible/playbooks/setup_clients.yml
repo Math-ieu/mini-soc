@@ -1,0 +1,46 @@
+- name: Configure Linux Clients
+  hosts: linux_clients
+  become: yes
+  vars:
+    wazuh_manager_ip: "10.0.1.x" # Internal IP of Wazuh Manager from Terraform
+  tasks:
+    - name: Install Wazuh Agent GPG key
+      apt_key:
+        url: https://packages.wazuh.com/key/GPG-KEY-WAZUH
+        state: present
+
+    - name: Add Wazuh repository
+      apt_repository:
+        repo: 'deb https://packages.wazuh.com/4.x/apt/ stable main'
+        state: present
+
+    - name: Install Wazuh Agent
+      apt:
+        name: wazuh-agent
+        state: present
+        update_cache: yes
+
+    - name: Configure Wazuh Manager IP
+      lineinfile:
+        path: /var/ossec/etc/ossec.conf
+        regexp: '<address>MANAGER_IP</address>'
+        line: "    <address>{{ wazuh_manager_ip }}</address>"
+
+    - name: Enable and start Wazuh Agent
+      systemd:
+        name: wazuh-agent
+        enabled: yes
+        state: started
+
+    # Service specific configuration
+    - name: Install Apache (for Web Client)
+      apt:
+        name: apache2
+        state: present
+      when: "'web-linux' in inventory_hostname"
+
+    - name: Install vsftpd (for FTP Client)
+      apt:
+        name: vsftpd
+        state: present
+      when: "'ftp-linux' in inventory_hostname"
