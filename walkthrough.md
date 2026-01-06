@@ -42,10 +42,10 @@ Located in the `scenarios/` directory.
 ```
 
 ## 4. Access & Credentials
-- **Wazuh (SIEM)**: `https://35.180.48.124`
+- **Wazuh (SIEM)**: `https://13.38.41.175`
     - **User**: `admin`
     - **Password**: `mC4WJR+OsgKiNqc98hkRy6BldiL5qUJM`
-- **Shuffle (SOAR)**: `http://15.188.127.39:3001`
+- **Shuffle (SOAR)**: `http://51.44.165.123:3001`
     - (Initial setup: you will be prompted to create your admin account).
 
 ## 🛡 Security Note & Troubleshooting
