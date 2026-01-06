@@ -1,0 +1,43 @@
+- name: Install Suricata NIDS
+  hosts: wazuh_manager # For a mini SOC, we can install Suricata on the same host or dedicated
+  become: yes
+  tasks:
+    - name: Add Suricata repository
+      apt_repository:
+        repo: 'ppa:oisf/suricata-stable'
+        state: present
+
+    - name: Install Suricata
+      apt:
+        name: suricata
+        state: present
+        update_cache: yes
+
+    - name: Configure Suricata EVE log output
+      lineinfile:
+        path: /etc/suricata/suricata.yaml
+        regexp: 'enabled: no'
+        line: '      enabled: yes'
+        # Note: In a production environment, we should use a template for the full yaml
+      
+    - name: Ensure Wazuh Manager monitors Suricata logs
+      blockinfile:
+        path: /var/ossec/etc/ossec.conf
+        insertafter: '<ossec_config>'
+        block: |
+          <localfile>
+            <log_format>json</log_format>
+            <location>/var/log/suricata/eve.json</location>
+          </localfile>
+      notify: Restart Wazuh Manager
+
+    - name: Restart Suricata
+      systemd:
+        name: suricata
+        state: restarted
+
+  handlers:
+    - name: Restart Wazuh Manager
+      systemd:
+        name: wazuh-manager
+        state: restarted

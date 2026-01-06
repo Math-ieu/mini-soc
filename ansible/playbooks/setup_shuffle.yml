@@ -1,0 +1,86 @@
+- name: Install Shuffle SOAR (Docker based)
+  hosts: shuffle_soar
+  become: yes
+  tasks:
+    - name: Install required system packages
+      apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - gnupg
+          - lsb-release
+        state: present
+        update_cache: yes
+
+    - name: Add Docker GPG key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+    - name: Add Docker repository
+      apt_repository:
+        repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+        state: present
+
+    - name: Install Docker and Docker Compose plugin
+      apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-compose-plugin
+        state: present
+        update_cache: yes
+
+    - name: Ensure Docker is started and enabled
+      systemd:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Create Shuffle directory
+      file:
+        path: /opt/shuffle
+        state: directory
+        mode: '0777'
+
+    - name: Create required subdirectories
+      file:
+        path: "/opt/shuffle/{{ item }}"
+        state: directory
+        mode: '0777'
+      loop:
+        - db
+        - shuffle-apps
+        - shuffle-files
+
+    - name: Create .env file for Shuffle
+      copy:
+        dest: /opt/shuffle/.env
+        content: |
+          FRONTEND_PORT=3001
+          FRONTEND_PORT_HTTPS=3002
+          BACKEND_PORT=5001
+          BACKEND_HOSTNAME=shuffle-backend
+          DB_LOCATION=/opt/shuffle/db
+          SHUFFLE_APP_HOTLOAD_LOCATION=/opt/shuffle/shuffle-apps
+          SHUFFLE_FILE_LOCATION=/opt/shuffle/shuffle-files
+          SHUFFLE_OPENSEARCH_PASSWORD=Shuffle12345678!
+          OUTER_HOSTNAME=15.188.127.39
+          HTTP_PROXY=
+          HTTPS_PROXY=
+          SHUFFLE_PASS_WORKER_PROXY=false
+          SHUFFLE_PASS_APP_PROXY=false
+          SHUFFLE_OPENSEARCH_SKIP_SSL_VERIFY=true
+          SHUFFLE_OPENSEARCH_URL=http://shuffle-opensearch:9200
+
+    - name: Download Shuffle Docker Compose
+      get_url:
+        url: https://raw.githubusercontent.com/Shuffle/Shuffle/master/docker-compose.yml
+        dest: /opt/shuffle/docker-compose.yml
+
+    - name: Start Shuffle with Docker Compose
+      shell: |
+        cd /opt/shuffle
+        docker compose up -d

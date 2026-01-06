@@ -1,0 +1,48 @@
+- name: Install Wazuh Manager (Bare Metal)
+  hosts: wazuh_manager
+  become: yes
+  tasks:
+    - name: Install dependencies
+      apt:
+        name:
+          - curl
+          - apt-transport-https
+          - lsb-release
+          - gnupg2
+        state: present
+        update_cache: yes
+
+    - name: Add Wazuh GPG key
+      apt_key:
+        url: https://packages.wazuh.com/key/GPG-KEY-WAZUH
+        state: present
+
+    - name: Add Wazuh repository
+      apt_repository:
+        repo: 'deb https://packages.wazuh.com/4.x/apt/ stable main'
+        state: present
+
+    - name: Install Wazuh Manager
+      apt:
+        name: wazuh-manager
+        state: present
+
+    - name: Enable and start Wazuh Manager
+      systemd:
+        name: wazuh-manager
+        enabled: yes
+        state: started
+
+    - name: Install Wazuh (Indexer, Manager, Dashboard) using installation assistant
+      shell: |
+        curl -sO https://packages.wazuh.com/4.7/wazuh-install.sh
+        bash wazuh-install.sh -a
+      become: yes
+      async: 1200
+      poll: 10
+      register: wazuh_install_output
+
+    - name: Display Wazuh installation summary
+      debug:
+        msg: "{{ wazuh_install_output.stdout_lines }}"
+      when: wazuh_install_output.stdout is defined
