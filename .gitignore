@@ -33,3 +33,5 @@ terraform.tfstate.backup
 .terraform.lock.hcl
 .terraform/
 tfplan
+.terraform/
+.venv/
